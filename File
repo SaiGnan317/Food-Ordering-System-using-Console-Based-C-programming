@@ -1,0 +1,192 @@
+#include <stdio.h>
+#include <string.h>
+
+#define SIZE 10
+#define MAX 100
+
+// Food item structure
+typedef struct {
+    char name[50];
+    float price;
+} FoodItem;
+
+// Order structure
+typedef struct {
+    char name[50];
+    int quantity;
+    float totalPrice;
+} Order;
+
+// Deque (double-ended queue)
+typedef struct {
+    Order data[MAX];
+    int front, rear;
+} Deque;
+
+// Initialize deque
+void initDeque(Deque *dq) {
+    dq->front = -1;
+    dq->rear = -1;
+}
+
+// Check if deque is empty
+int isEmpty(Deque *dq) {
+    return dq->front == -1;
+}
+
+// Add order to rear
+void enqueueRear(Deque *dq, Order o) {
+    if ((dq->rear + 1) % MAX == dq->front) {
+        printf("Queue is full.\n");
+        return;
+    }
+
+    if (isEmpty(dq)) {
+        dq->front = dq->rear = 0;
+    } else {
+        dq->rear = (dq->rear + 1) % MAX;
+    }
+    dq->data[dq->rear] = o;
+}
+
+// Display menu
+void displayMenu(FoodItem menu[], int size) {
+    printf("\nMenu:\n");
+    printf("ID\tItem\t\tPrice\n");
+    for (int i = 0; i < size; i++) {
+        printf("%d\t%-15sRs%.2f\n", i + 1, menu[i].name, menu[i].price);
+    }
+}
+
+// Sort menu by price using insertion sort
+void sortMenu(FoodItem menu[], int size) {
+    for (int i = 1; i < size; i++) {
+        FoodItem key = menu[i];
+        int j = i - 1;
+        while (j >= 0 && menu[j].price > key.price) {
+            menu[j + 1] = menu[j];
+            j--;
+        }
+        menu[j + 1] = key;
+    }
+}
+
+// Take order from user
+Order takeOrder(FoodItem menu[], int size) {
+    Order o;
+    int id, qty;
+
+    printf("Enter item ID: ");
+    scanf("%d", &id);
+    if (id < 1 || id > size) {
+        printf("Invalid ID.\n");
+        o.quantity = -1;
+        return o;
+    }
+
+    printf("Enter quantity: ");
+    scanf("%d", &qty);
+    if (qty <= 0) {
+        printf("Invalid quantity.\n");
+        o.quantity = -1;
+        return o;
+    }
+
+    strcpy(o.name, menu[id - 1].name);
+    o.quantity = qty;
+    o.totalPrice = menu[id - 1].price * qty;
+    return o;
+}
+
+// Show all orders
+void showOrders(Deque *dq) {
+    if (isEmpty(dq)) {
+        printf("No orders yet.\n");
+        return;
+    }
+
+    printf("\nOrder Summary:\n");
+    printf("Item\t\tQty\tTotal\n");
+    for (int i = dq->front; ; i = (i + 1) % MAX) {
+        printf("%-15s%d\tRs%.2f\n", dq->data[i].name, dq->data[i].quantity, dq->data[i].totalPrice);
+        if (i == dq->rear) break;
+    }
+}
+
+// Show total bill
+void showBill(Deque *dq) {
+    if (isEmpty(dq)) {
+        printf("No orders to bill.\n");
+        return;
+    }
+
+    float total = 0;
+    printf("\nFinal Bill:\n");
+    printf("Item\t\tQty\tTotal\n");
+    for (int i = dq->front; ; i = (i + 1) % MAX) {
+        printf("%-15s%d\tRs%.2f\n", dq->data[i].name, dq->data[i].quantity, dq->data[i].totalPrice);
+        total += dq->data[i].totalPrice;
+        if (i == dq->rear) break;
+    }
+    printf("----------------------------\n");
+    printf("Total Amount:\t\tRs%.2f\n", total);
+}
+
+int main() {
+    FoodItem menu[SIZE] = {
+        {"Butter Chicken", 250},
+        {"Chicken Tikka", 275},
+        {"Palak Paneer", 220},
+        {"Chole Bhature", 180},
+        {"Masala Dosa", 150},
+        {"Biryani", 300},
+        {"Samosa", 30},
+        {"Pani Puri", 40},
+        {"Rajma Chawal", 200},
+        {"Aloo Paratha", 120}
+    };
+
+    Deque orderQueue;
+    initDeque(&orderQueue);
+
+    sortMenu(menu, SIZE); // Sort menu from cheap to costly
+
+    int choice;
+    do {
+        printf("\n--- Food Ordering System ---\n");
+        printf("1. Show Menu\n");
+        printf("2. Place Order\n");
+        printf("3. View Orders\n");
+        printf("4. View Bill\n");
+        printf("5. Exit\n");
+        printf("Enter choice: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1:
+                displayMenu(menu, SIZE);
+                break;
+            case 2: {
+                Order o = takeOrder(menu, SIZE);
+                if (o.quantity != -1) {
+                    enqueueRear(&orderQueue, o);
+                    printf("Order added!\n");
+                }
+                break;
+            }
+            case 3:
+                showOrders(&orderQueue);
+                break;
+            case 4:
+                showBill(&orderQueue);
+                break;
+            case 5:
+                printf("Thank you for ordering!\n");
+                break;
+            default:
+                printf("Invalid option.\n");
+        }
+    } while (choice != 5);
+
+    return 0;
+}
